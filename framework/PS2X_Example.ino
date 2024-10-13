@@ -175,7 +175,7 @@ void loop() {
       Serial.println("Square just released");     
 
     if(ps2x.Button(PSB_L1) || ps2x.Button(PSB_R1)) { //print stick values if either is TRUE
-      Serial.print("Stick Values:");
+      Serial.print("Stick Values:\n");
       Serial.println(ps2x.Analog(PSS_LY), DEC); //Left stick, Y axis. Other options: LX, RY, RX  
       Serial.print(",");
       Serial.println(ps2x.Analog(PSS_LX), DEC); 
