@@ -1,10 +1,10 @@
 #include "PS2X_lib.h" //for v1.6
 #include "motor.h"
 
-#define PS2_DAT 13      // 14
-#define PS2_CMD 11      // 15
-#define PS2_SEL 10      // 16
-#define PS2_CLK 12      // 17
+#define PS2_DAT 13      // connect to the data pin of PS2 controller
+#define PS2_CMD 11      // connect to the command pin of PS2 controller
+#define PS2_SEL 10      // connect to the select pin of PS2 controller
+#define PS2_CLK 12      // connect to the clock pin of PS2 controller
 #define Motor_FR_IN1 8  // Motor1 Direction FR为右前
 #define Motor_FR_IN2 7  // Motor1 Direction
 #define Motor_FL_IN3 2  // Motor2 Direction FL为左前
@@ -13,16 +13,16 @@
 #define Motor_BR_IN6 15 // Motor3 Direction
 #define Motor_BL_IN7 17 // Motor4 Direction BL为左后
 #define Motor_BL_IN8 16 // Motor4 Direction
-#define Motor_FR_ENA 9  // M SPREED
-#define Motor_FL_ENB 6  // M SPREED
-#define Motor_BR_ENC 5  // M SPREED
-#define Motor_BL_END 3  // M SPREED
+#define Motor_FR_ENA 9  // M1 SPREED
+#define Motor_FL_ENB 6  // M2 SPREED
+#define Motor_BR_ENC 5  // M3 SPREED
+#define Motor_BL_END 3  // M4 SPREED
 
 // pwm settings
-const int VA;
-const int VB;
-const int VC;
-const int VD;
+int VA;
+int VB;
+int VC;
+int VD;
 const int VALL = 255;
 
 // #define pressures   true
@@ -34,26 +34,27 @@ Motor mt;
 PS2X ps2x; // create PS2 Controller Class
 int error = 0;
 byte type = 0;
-byte vibrate = 0;
+byte vibrate = 0x60;
 
 void setup()
 {
-    pinMode(13, OUTPUT);
-    pinMode(12, OUTPUT);
-    pinMode(9, OUTPUT);
-    pinMode(8, OUTPUT);
-    pinMode(7, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(3, OUTPUT);
     pinMode(2, OUTPUT);
-    pinMode(11, OUTPUT);
-    pinMode(10, OUTPUT);
-    pinMode(6, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(4, OUTPUT);
     pinMode(5, OUTPUT);
+    pinMode(6, OUTPUT);
+    pinMode(7, OUTPUT);
+    pinMode(8, OUTPUT);
+    pinMode(9, OUTPUT);
+    pinMode(14, OUTPUT);
+    pinMode(15, OUTPUT);
+    pinMode(16, OUTPUT);
+    pinMode(17, OUTPUT);
     
     Serial.begin(57600);
     delay(300);
-    // setup pins and settings: GamePad(clock, command, attention, data, Pressures?, Rumble?)
+    // setup pins and settings: 
+    //GamePad(clock, command, attention, data, Pressures?, Rumble?)
     error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, pressures, rumble);
 
     if (error == 0)
@@ -69,9 +70,6 @@ void setup()
             Serial.println("true");
         else
             Serial.println("false");
-        Serial.println("Try out all the buttons, X will vibrate the controller, faster as you press harder;");
-        Serial.println("holding L1 or R1 will print out the analog stick values.");
-        Serial.println("Note: Go to www.billporter.info for updates and to report bugs.");
     }
     else if (error == 1)
         Serial.println("No controller found.");
@@ -117,63 +115,99 @@ void loop()
         Serial.print("Type Error");
     }
     else
-    {                                      // DualShock Controller
-        ps2x.read_gamepad(false, vibrate); // read controller and set large motor to spin at 'vibrate' speed
-        if (ps2x.ButtonPressed(PSB_CIRCLE))
+    {// DualShock Controller
+        ps2x.read_gamepad(true, vibrate);
+        if (ps2x.ButtonPressed())
         {
             if (ps2x.Button(PSB_PAD_UP))
             {
+                mt.FRONTWARD (VALL);
             }
             if (ps2x.Button(PSB_PAD_RIGHT))
             {
-                Serial.print("Right held this hard: ");
-                Serial.println(ps2x.Analog(PSAB_PAD_RIGHT), DEC);
+                mt.RIGHTWARD(VALL);
             }
             if (ps2x.Button(PSB_PAD_LEFT))
             {
-                Serial.print("LEFT held this hard: ");
-                Serial.println(ps2x.Analog(PSAB_PAD_LEFT), DEC);
+                mt.LEFTWARD(0);
+                mt.SPEED_SETTING(0, 0, 0, 0);
             }
             if (ps2x.Button(PSB_PAD_DOWN))
             {
-                Serial.print("DOWN held this hard: ");
-                Serial.println(ps2x.Analog(PSAB_PAD_DOWN), DEC);
+                mt.BACKWARD(0);
+                mt.SPEED_SETTING(0, 0, 0, 0);
+            }
+            if (ps2x.Button(PSB_L2))
+            {
+                mt.LEFT_FRONTWARD(VALL);
+            }
+            if (ps2x.Button(PSB_R2))
+            {
+                mt.RIGHT_FRONTWARD(VALL);
+            }
+            if (ps2x.Button(PSB_L1))
+            {
+                mt.LEFT_BACKWARD(VALL);
+            }
+            if (ps2x.Button(PSB_R1))
+            {
+                mt.RIGHT_BACKWARD(VALL);
+            }
+            if (ps2x.Button(PSB_SQUARE))
+            {
+                mt.LEFT_TURNAROUND(64);
+            }
+            if (ps2x.Button(PSB_R1))
+            {
+                mt.RIGHT_TURNAROUND(64);
+            }
+            if (ps2x.Button(PSB_START))
+            {
+                mt.demo();
             }
         }
-
-        vibrate = ps2x.Analog(PSAB_CROSS); // this will set the large motor vibrate speed based on how hard you press the blue (X) button
-        if (ps2x.NewButtonState())
-        { // will be TRUE if any button changes state (on to off, or off to on)
-            if (ps2x.Button(PSB_L3))
-                Serial.println("L3 pressed");
-            if (ps2x.Button(PSB_R3))
-                Serial.println("R3 pressed");
+        if (ps2x.ButtonReleased())
+        {
+            if (ps2x.Button(PSB_PAD_UP))
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_PAD_RIGHT))
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_PAD_LEFT))
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_PAD_DOWN))
+            {
+                mt.STOP();
+            }
             if (ps2x.Button(PSB_L2))
-                Serial.println("L2 pressed");
+            {
+                mt.STOP();
+            }
             if (ps2x.Button(PSB_R2))
-                Serial.println("R2 pressed");
-            if (ps2x.Button(PSB_TRIANGLE))
-                Serial.println("Triangle pressed");
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_L1))
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_R1))
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_SQUARE))
+            {
+                mt.STOP();
+            }
+            if (ps2x.Button(PSB_R1))
+            {
+                mt.STOP();
+            }
         }
-
-        if (ps2x.ButtonPressed(PSB_CIRCLE)) // will be TRUE if button was JUST pressed
-            Serial.println("Circle just pressed");
-        if (ps2x.NewButtonState(PSB_CROSS)) // will be TRUE if button was JUST pressed OR released
-            Serial.println("Cross just changed");
-        if (ps2x.ButtonReleased(PSB_SQUARE)) // will be TRUE if button was JUST released
-            Serial.println("Square just released");
-
-        if (ps2x.Button(PSB_L1) || ps2x.Button(PSB_R1))
-        { // print stick values if either is TRUE
-            Serial.print("Stick Values:\n");
-            Serial.println(ps2x.Analog(PSS_LY), DEC); // Left stick, Y axis. Other options: LX, RY, RX
-            Serial.print(",");
-            Serial.println(ps2x.Analog(PSS_LX), DEC);
-            Serial.print(",");
-            Serial.println(ps2x.Analog(PSS_RY), DEC);
-            Serial.print(",");
-            Serial.println(ps2x.Analog(PSS_RX), DEC);
-        }
-    }
     delay(50);
 }
