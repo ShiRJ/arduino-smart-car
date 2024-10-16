@@ -1,33 +1,35 @@
 #include "PS2X_lib.h" //for v1.6
 
-/******************************************************************
- * set pins connected to PS2 controller:
- *   - 1e column: original 
- *   - 2e colmun: Stef?
- * replace pin numbers by the ones you use
- ******************************************************************/
 #define PS2_DAT        13  //14    
 #define PS2_CMD        11  //15
 #define PS2_SEL        10  //16
 #define PS2_CLK        12  //17
+#define Motor_FR_IN1 8     // Motor1 Direction
+#define Motor_FR_IN2 7     // Motor1 Direction
+#define Motor_FL_IN3 2     // Motor2 Direction
+#define Motor_FL_IN4 4     // Motor2 Direction
+#define Motor_BR_IN5 14    // Motor3 Direction
+#define Motor_BR_IN6 15    // Motor3 Direction
+#define Motor_BL_IN7 17    // Motor4 Direction
+#define Motor_BL_IN8 16    // Motor4 Direction
+#define Motor_FR_ENA 9     // M SPREED
+#define Motor_FL_ENB 6     // M SPREED
+#define Motor_BR_ENC 5     // M SPREED
+#define Motor_BL_END 3     // M SPREED
 
-/******************************************************************
- * select modes of PS2 controller:
- *   - pressures = analog reading of push-butttons 
- *   - rumble    = motor rumbling
- * uncomment 1 of the lines for each mode selection
- ******************************************************************/
+//PWM Settings
+const int VA;
+const int VB;
+const int VC;
+const int VD;
+const int VALL = 255;
+
 //#define pressures   true
 #define pressures   false
-//#define rumble      true
-#define rumble      false
+#define rumble      true
+//#define rumble      false
 
 PS2X ps2x; // create PS2 Controller Class
-
-//right now, the library does NOT support hot pluggable controllers, meaning 
-//you must always either restart your Arduino after you connect the controller, 
-//or call config_gamepad(pins) again after connecting the controller.
-
 int error = 0;
 byte type = 0;
 byte vibrate = 0;
@@ -35,24 +37,20 @@ byte vibrate = 0;
 void setup(){
  
   Serial.begin(57600);
-  
-  delay(300);  //added delay to give wireless ps2 module some time to startup, before configuring it
-   
-  //CHANGES for v1.6 HERE!!! **************PAY ATTENTION*************
-  
-  //setup pins and settings: GamePad(clock, command, attention, data, Pressures?, Rumble?) check for error
+  delay(300);
+  //setup pins and settings: GamePad(clock, command, attention, data, Pressures?, Rumble?)
   error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, pressures, rumble);
   
   if(error == 0){
     Serial.print("Found Controller, configured successful ");
     Serial.print("pressures = ");
 	if (pressures)
-	  Serial.println("true ");
+	  Serial.println("true");
 	else
 	  Serial.println("false");
 	Serial.print("rumble = ");
 	if (rumble)
-	  Serial.println("true)");
+	  Serial.println("true");
 	else
 	  Serial.println("false");
     Serial.println("Try out all the buttons, X will vibrate the controller, faster as you press harder;");
