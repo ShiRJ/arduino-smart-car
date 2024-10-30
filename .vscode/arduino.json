@@ -2,5 +2,6 @@
     "board": "arduino:avr:uno",
     "programmer": "arduino:avrispmkii",
     "port": "COM9",
-    "sketch": "framework\\PS2X_SmartMKcar.ino"
+    "sketch": "firmware\\SmartMKcar\\SmartMKcar.ino",
+    "output": "./build"
 }

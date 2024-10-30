@@ -1,3 +1,4 @@
+#line 1 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\PS2X_lib.cpp"
 #include "PS2X_lib.h"
 #include <math.h>
 #include <stdio.h>
