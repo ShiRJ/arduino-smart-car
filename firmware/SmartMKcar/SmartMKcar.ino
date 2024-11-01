@@ -14,7 +14,7 @@ u16 VA;
 u16 VB;
 u16 VC;
 u16 VD;
-//u16 VALL = 255;
+u16 VALL = 255;
 int count = 10;
 
 PS2X ps2x; // create PS2 Controller Class

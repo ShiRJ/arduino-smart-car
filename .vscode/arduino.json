@@ -1,7 +1,7 @@
 {
     "board": "arduino:avr:uno",
     "programmer": "arduino:avrispmkii",
-    "port": "COM9",
+    "port": "COM18",
     "sketch": "firmware\\SmartMKcar\\SmartMKcar.ino",
     "output": "./build"
 }
