@@ -1,27 +1,11 @@
+#include <math.h>
 #include "PS2X_lib.h" //for v1.6
 #define unsigned int u16
-#define PS2_DAT 13      // connect to the data pin of PS2 controller
-#define PS2_CMD 11      // connect to the command pin of PS2 controller
-#define PS2_SEL 10      // connect to the select pin of PS2 controller
-#define PS2_CLK 12      // connect to the clock pin of PS2 controller
-//#define pressures   true
-#define pressures false
-#define rumble true
-//#define rumble false
-
-// pwm settings
-u16 VA;
-u16 VB;
-u16 VC;
-u16 VD;
-u16 VALL = 255;
-int count = 10;
-
-PS2X ps2x; // create PS2 Controller Class
-int error = 0;
-byte type = 0;
-byte vibrate = 0x00;
-
+#define signed char u8
+#define PS2_DAT 13 // connect to the data pin of PS2 controller
+#define PS2_CMD 11 // connect to the command pin of PS2 controller
+#define PS2_SEL 10 // connect to the select pin of PS2 controller
+#define PS2_CLK 12 // connect to the clock pin of PS2 controller
 #define Motor_IN1 8  // Motor1 Direction FR
 #define Motor_IN2 7  // Motor1 Direction
 #define Motor_IN3 2  // Motor2 Direction FL
@@ -34,18 +18,42 @@ byte vibrate = 0x00;
 #define Motor_ENB 6  // Motor2 Speed
 #define Motor_ENC 5  // Motor3 Speed
 #define Motor_END 3  // Motor4 Speed
+// #define pressures   true
+#define pressures false
+// #define rumble true
+#define rumble false
+
+// pwm settings
+int VA;
+int VB;
+int VC;
+int VD;
+int VX;
+int VY;
+int VW;
+u16 VALL = 255;
+int count = 10;
+int ctr_mode = 1;
+const float K = 0.5;
+const float L = 0.9;
+const float u = 180;
+
+PS2X ps2x; // create PS2 Controller Class
+int error = 0;
+byte type = 0;
+byte vibrate = 0x00;
 
 void SPEED_SETTING(char A, char B, char C, char D); // 设置速度
-void FRONTWARD(char VALL);          // 小车向前运动
-void BACKWARD(char VALL);           // 小车向后运动
-void LEFTWARD(char VALL);           // 小车向左运动
-void RIGHTWARD(char VALL);          // 小车向右运动
-void LEFT_FRONTWARD(char VALL);     // 小车向左前运动
-void LEFT_BACKWARD(char VALL);      // 小车向左后运动
-void RIGHT_FRONTWARD(char VALL);    // 小车向右前运动
-void RIGHT_BACKWARD(char VALL);     // 小车向右后运动
-void RIGHT_TURNAROUND(char VALL);   // 小车原地向右转
-void LEFT_TURNAROUND(char VALL);    // 小车原地向左转
+void FRONTWARD(char VALL);                          // 小车向前运动
+void BACKWARD(char VALL);                           // 小车向后运动
+void LEFTWARD(char VALL);                           // 小车向左运动
+void RIGHTWARD(char VALL);                          // 小车向右运动
+void LEFT_FRONTWARD(char VALL);                     // 小车向左前运动
+void LEFT_BACKWARD(char VALL);                      // 小车向左后运动
+void RIGHT_FRONTWARD(char VALL);                    // 小车向右前运动
+void RIGHT_BACKWARD(char VALL);                     // 小车向右后运动
+void RIGHT_TURNAROUND(char VALL);                   // 小车原地向右转
+void LEFT_TURNAROUND(char VALL);                    // 小车原地向左转
 
 void STOP(); // 小车停止
 void demo(); // 小车运动示例
@@ -65,34 +73,7 @@ void setup()
     pinMode(5, OUTPUT);
     Serial.begin(57600);
     delay(300);
-    // setup pins and settings:
-    // GamePad(clock, command, attention, data, Pressures?, Rumble?)
-    /*error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, pressures, rumble);
 
-    if (error == 0)
-    {
-        Serial.print("Found Controller, configured successful ");
-        Serial.print("pressures = ");
-        if (pressures)
-            Serial.println("true");
-        else
-            Serial.println("false");
-        Serial.print("rumble = ");
-        if (rumble)
-            Serial.println("true");
-        else
-            Serial.println("false");
-    }
-    else if (error == 1)
-        Serial.println("No controller found.");
-
-    else if (error == 2)
-        Serial.println("Controller found but not accepting commands.");
-
-    else if (error == 3)
-        Serial.println("Controller refusing to enter Pressures mode, may not support it. ");
-
-    //  Serial.print(ps2x.Analog(1), HEX);*/
     while (count > 0)
     {
         count--;
@@ -141,113 +122,208 @@ void loop()
     else
     { // DualShock Controller
         ps2x.read_gamepad(false, vibrate);
-
-        if (ps2x.ButtonPressed(PSB_PAD_UP))
-        {
-            FRONTWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_PAD_RIGHT))
-        {
-            RIGHTWARD(0);
-            SPEED_SETTING(255, 255, 255, 255);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_PAD_LEFT))
-        {
-            LEFTWARD(0);
-            SPEED_SETTING(255, 255, 255, 255);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_PAD_DOWN))
-        {
-            BACKWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_L2))
-        {
-            LEFT_FRONTWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_R2))
-        {
-            RIGHT_FRONTWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_L1))
-        {
-            LEFT_BACKWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_R1))
-        {
-            RIGHT_BACKWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_SQUARE))
-        {
-            LEFT_TURNAROUND(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_CIRCLE))
-        {
-            RIGHT_TURNAROUND(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(PSB_START))
-        {
-            demo();
+        VX = ps2x.Analog(PSS_LX) - 127;
+        VY = -(ps2x.Analog(PSS_LY) - 128);
+        VW = -(ps2x.Analog(PSS_RX) - 128);
+        VA = (int)(L * (VY - VX + K * VW));
+        VB = (int)(L * (VY + VX - K * VW));
+        VC = (int)(L * (VY + VX + K * VW));
+        VD = (int)(L * (VY - VX - K * VW));
+        if (ps2x.Button(PSB_CROSS))
+        { // print stick values if either is TRUE
+            Serial.print("Stick Values:\n");
+            Serial.println(VX, DEC);
+            Serial.println(VY, DEC);
+            Serial.println(VW, DEC);
+            Serial.print("MOD:\n");
+            Serial.println(ctr_mode, DEC);
+            Serial.print("SPEED:\n");
+            Serial.println(VA, DEC);
+            Serial.println(VB, DEC);
+            Serial.println(VC, DEC);
+            Serial.println(VD, DEC);
         }
 
-        if (ps2x.ButtonReleased(PSB_PAD_UP))
+        if ((VX == 0 || VX == 1) && (VY == 0 || VY == 1) && (VW == 0 || VW == 1))
         {
-            STOP();
-            vibrate = 0x00;
+            if (ctr_mode == 0)
+                STOP();
+            ctr_mode = 1;
         }
-        if (ps2x.ButtonReleased(PSB_PAD_RIGHT))
+        else
         {
-            STOP();
-            vibrate = 0x00;
+            ctr_mode = 0;
         }
-        if (ps2x.ButtonReleased(PSB_PAD_LEFT))
+
+        if (ctr_mode == 0)
         {
-            STOP();
-            vibrate = 0x00;
+            if (VA > 0)
+            {
+                digitalWrite(Motor_IN1, LOW);
+                digitalWrite(Motor_IN2, HIGH);
+            }
+            else
+            {
+                digitalWrite(Motor_IN1, HIGH);
+                digitalWrite(Motor_IN2, LOW);
+                VA = -VA;
+            }
+
+            if (VB > 0)
+            {
+                digitalWrite(Motor_IN3, LOW);
+                digitalWrite(Motor_IN4, HIGH);
+            }
+            else
+            {
+                digitalWrite(Motor_IN3, HIGH);
+                digitalWrite(Motor_IN4, LOW);
+                VB = -VB;
+            }
+
+            if (VC > 0)
+            {
+                digitalWrite(Motor_IN5, LOW);
+                digitalWrite(Motor_IN6, HIGH);
+            }
+            else
+            {
+                digitalWrite(Motor_IN5, HIGH);
+                digitalWrite(Motor_IN6, LOW);
+                VC = -VC;
+            }
+
+            if (VD > 0)
+            {
+                digitalWrite(Motor_IN7, LOW);
+                digitalWrite(Motor_IN8, HIGH);
+            }
+            else
+            {
+                digitalWrite(Motor_IN7, HIGH);
+                digitalWrite(Motor_IN8, LOW);
+                VD = -VD;
+            }
+            SPEED_SETTING(255, 255, 255, 255);
+            delay(10);
+            SPEED_SETTING(VA+15, VB+35, VC, VD);
         }
-        if (ps2x.ButtonReleased(PSB_PAD_DOWN))
+
+        if (ctr_mode == 1)
         {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(PSB_L2))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(PSB_R2))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(PSB_L1))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(PSB_R1))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(PSB_SQUARE))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(PSB_CIRCLE))
-        {
-            STOP();
-            vibrate = 0x00;
+            if (ps2x.ButtonPressed(PSB_PAD_UP))
+            {
+                FRONTWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_PAD_RIGHT))
+            {
+                RIGHTWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_PAD_LEFT))
+            {
+                LEFTWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_PAD_DOWN))
+            {
+                BACKWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_L2))
+            {
+                LEFT_FRONTWARD(0);
+                SPEED_SETTING(210, 0, 0, 230);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_R2))
+            {
+                RIGHT_FRONTWARD(0);
+                SPEED_SETTING(0, 255, 210, 0);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_L1))
+            {
+                LEFT_BACKWARD(0);
+                SPEED_SETTING(0, 255, 210, 0);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_R1))
+            {
+                RIGHT_BACKWARD(0);
+                SPEED_SETTING(210, 0, 0, 230);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_SQUARE))
+            {
+                LEFT_TURNAROUND(VALL);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_CIRCLE))
+            {
+                RIGHT_TURNAROUND(VALL);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(PSB_START))
+            {
+                demo();
+            }
+
+            if (ps2x.ButtonReleased(PSB_PAD_UP))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_PAD_RIGHT))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_PAD_LEFT))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_PAD_DOWN))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_L2))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_R2))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_L1))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_R1))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_SQUARE))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(PSB_CIRCLE))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
         }
     }
     delay(50);
@@ -490,44 +566,61 @@ void STOP()
 
 void demo()
 {
-    BACKWARD(128);
+    FRONTWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    FRONTWARD(128);
+
+    BACKWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    LEFTWARD(128);
+
+    LEFTWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    RIGHTWARD(128);
+
+    RIGHTWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    LEFT_FRONTWARD(128);
-    delay(2000);
+
+    LEFT_FRONTWARD(0);
+    SPEED_SETTING(210, 0, 0, 230);
+    delay(3000);
     STOP();
     delay(2000);
-    LEFT_BACKWARD(128);
-    delay(2000);
+
+    RIGHT_FRONTWARD(0);
+    SPEED_SETTING(0, 255, 210, 0);
+    delay(3000);
     STOP();
     delay(2000);
-    RIGHT_FRONTWARD(128);
-    delay(2000);
+
+    RIGHT_BACKWARD(0);
+    SPEED_SETTING(210, 0, 0, 230);
+    delay(3000);
     STOP();
     delay(2000);
-    RIGHT_BACKWARD(128);
-    delay(2000);
+
+    LEFT_BACKWARD(0);
+    SPEED_SETTING(0, 255, 210, 0);
+    delay(3000);
     STOP();
     delay(2000);
-    RIGHT_TURNAROUND(128);
-    delay(2000);
+
+    RIGHT_TURNAROUND(255);
+    delay(3500);
     STOP();
     delay(2000);
-    LEFT_TURNAROUND(128);
-    delay(2000);
+
+    LEFT_TURNAROUND(255);
+    delay(3500);
     STOP();
     delay(2000);
 }

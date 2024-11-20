@@ -1,28 +1,32 @@
 # 1 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\SmartMKcar.ino"
 # 2 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\SmartMKcar.ino" 2
+# 3 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\SmartMKcar.ino" 2
+# 21 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\SmartMKcar.ino"
+// #define pressures   true
 
+// #define rumble true
 
-
-
-
-//#define pressures   true
-
-
-//#define rumble false
 
 // pwm settings
-u16 VA;
-u16 VB;
-u16 VC;
-u16 VD;
+int VA;
+int VB;
+int VC;
+int VD;
+int VX;
+int VY;
+int VW;
 u16 VALL = 255;
 int count = 10;
+int ctr_mode = 1;
+const float K = 0.5;
+const float L = 0.9;
+const float u = 180;
 
 PS2X ps2x; // create PS2 Controller Class
 int error = 0;
 byte type = 0;
 byte vibrate = 0x00;
-# 38 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\SmartMKcar.ino"
+
 void SPEED_SETTING(char A, char B, char C, char D); // 设置速度
 void FRONTWARD(char VALL); // 小车向前运动
 void BACKWARD(char VALL); // 小车向后运动
@@ -53,64 +57,11 @@ void setup()
     pinMode(5, 0x1);
     Serial.begin(57600);
     delay(300);
-    // setup pins and settings:
-    // GamePad(clock, command, attention, data, Pressures?, Rumble?)
-    /*error = ps2x.config_gamepad(PS2_CLK, PS2_CMD, PS2_SEL, PS2_DAT, pressures, rumble);
 
-
-
-    if (error == 0)
-
-    {
-
-        Serial.print("Found Controller, configured successful ");
-
-        Serial.print("pressures = ");
-
-        if (pressures)
-
-            Serial.println("true");
-
-        else
-
-            Serial.println("false");
-
-        Serial.print("rumble = ");
-
-        if (rumble)
-
-            Serial.println("true");
-
-        else
-
-            Serial.println("false");
-
-    }
-
-    else if (error == 1)
-
-        Serial.println("No controller found.");
-
-
-
-    else if (error == 2)
-
-        Serial.println("Controller found but not accepting commands.");
-
-
-
-    else if (error == 3)
-
-        Serial.println("Controller refusing to enter Pressures mode, may not support it. ");
-
-
-
-    //  Serial.print(ps2x.Analog(1), HEX);*/
-# 96 "d:\\Codefields\\arduino-smart-car\\firmware\\SmartMKcar\\SmartMKcar.ino"
     while (count > 0)
     {
         count--;
-        error = ps2x.config_gamepad(12 /* connect to the clock pin of PS2 controller*/, 11 /* connect to the command pin of PS2 controller*/, 10 /* connect to the select pin of PS2 controller*/, 13 /* connect to the data pin of PS2 controller*/, false, true);
+        error = ps2x.config_gamepad(12 /* connect to the clock pin of PS2 controller*/, 11 /* connect to the command pin of PS2 controller*/, 10 /* connect to the select pin of PS2 controller*/, 13 /* connect to the data pin of PS2 controller*/, false, false);
         if (error == 0)
         {
             Serial.println("Found Controller, configured successful");
@@ -155,113 +106,208 @@ void loop()
     else
     { // DualShock Controller
         ps2x.read_gamepad(false, vibrate);
-
-        if (ps2x.ButtonPressed(0x0010))
-        {
-            FRONTWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0020))
-        {
-            RIGHTWARD(0);
-            SPEED_SETTING(255, 255, 255, 255);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0080))
-        {
-            LEFTWARD(0);
-            SPEED_SETTING(255, 255, 255, 255);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0040))
-        {
-            BACKWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0100))
-        {
-            LEFT_FRONTWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0200))
-        {
-            RIGHT_FRONTWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0400))
-        {
-            LEFT_BACKWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0800))
-        {
-            RIGHT_BACKWARD(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x8000))
-        {
-            LEFT_TURNAROUND(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x2000))
-        {
-            RIGHT_TURNAROUND(VALL);
-            vibrate = 0x10;
-        }
-        if (ps2x.ButtonPressed(0x0008))
-        {
-            demo();
+        VX = ps2x.Analog(7) - 127;
+        VY = -(ps2x.Analog(8) - 128);
+        VW = -(ps2x.Analog(5) - 128);
+        VA = (int)(L * (VY - VX + K * VW));
+        VB = (int)(L * (VY + VX - K * VW));
+        VC = (int)(L * (VY + VX + K * VW));
+        VD = (int)(L * (VY - VX - K * VW));
+        if (ps2x.Button(0x4000))
+        { // print stick values if either is TRUE
+            Serial.print("Stick Values:\n");
+            Serial.println(VX, 10);
+            Serial.println(VY, 10);
+            Serial.println(VW, 10);
+            Serial.print("MOD:\n");
+            Serial.println(ctr_mode, 10);
+            Serial.print("SPEED:\n");
+            Serial.println(VA, 10);
+            Serial.println(VB, 10);
+            Serial.println(VC, 10);
+            Serial.println(VD, 10);
         }
 
-        if (ps2x.ButtonReleased(0x0010))
+        if ((VX == 0 || VX == 1) && (VY == 0 || VY == 1) && (VW == 0 || VW == 1))
         {
-            STOP();
-            vibrate = 0x00;
+            if (ctr_mode == 0)
+                STOP();
+            ctr_mode = 1;
         }
-        if (ps2x.ButtonReleased(0x0020))
+        else
         {
-            STOP();
-            vibrate = 0x00;
+            ctr_mode = 0;
         }
-        if (ps2x.ButtonReleased(0x0080))
+
+        if (ctr_mode == 0)
         {
-            STOP();
-            vibrate = 0x00;
+            if (VA > 0)
+            {
+                digitalWrite(8 /* Motor1 Direction FR*/, 0x0);
+                digitalWrite(7 /* Motor1 Direction*/, 0x1);
+            }
+            else
+            {
+                digitalWrite(8 /* Motor1 Direction FR*/, 0x1);
+                digitalWrite(7 /* Motor1 Direction*/, 0x0);
+                VA = -VA;
+            }
+
+            if (VB > 0)
+            {
+                digitalWrite(2 /* Motor2 Direction FL*/, 0x0);
+                digitalWrite(4 /* Motor2 Direction*/, 0x1);
+            }
+            else
+            {
+                digitalWrite(2 /* Motor2 Direction FL*/, 0x1);
+                digitalWrite(4 /* Motor2 Direction*/, 0x0);
+                VB = -VB;
+            }
+
+            if (VC > 0)
+            {
+                digitalWrite(14 /* Motor3 Direction BR*/, 0x0);
+                digitalWrite(15 /* Motor3 Direction*/, 0x1);
+            }
+            else
+            {
+                digitalWrite(14 /* Motor3 Direction BR*/, 0x1);
+                digitalWrite(15 /* Motor3 Direction*/, 0x0);
+                VC = -VC;
+            }
+
+            if (VD > 0)
+            {
+                digitalWrite(17 /* Motor4 Direction BL*/, 0x0);
+                digitalWrite(16 /* Motor4 Direction*/, 0x1);
+            }
+            else
+            {
+                digitalWrite(17 /* Motor4 Direction BL*/, 0x1);
+                digitalWrite(16 /* Motor4 Direction*/, 0x0);
+                VD = -VD;
+            }
+            SPEED_SETTING(255, 255, 255, 255);
+            delay(10);
+            SPEED_SETTING(VA+15, VB+35, VC, VD);
         }
-        if (ps2x.ButtonReleased(0x0040))
+
+        if (ctr_mode == 1)
         {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(0x0100))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(0x0200))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(0x0400))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(0x0800))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(0x8000))
-        {
-            STOP();
-            vibrate = 0x00;
-        }
-        if (ps2x.ButtonReleased(0x2000))
-        {
-            STOP();
-            vibrate = 0x00;
+            if (ps2x.ButtonPressed(0x0010))
+            {
+                FRONTWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0020))
+            {
+                RIGHTWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0080))
+            {
+                LEFTWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0040))
+            {
+                BACKWARD(0);
+                SPEED_SETTING(210, 255, 210, 210);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0100))
+            {
+                LEFT_FRONTWARD(0);
+                SPEED_SETTING(210, 0, 0, 230);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0200))
+            {
+                RIGHT_FRONTWARD(0);
+                SPEED_SETTING(0, 255, 210, 0);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0400))
+            {
+                LEFT_BACKWARD(0);
+                SPEED_SETTING(0, 255, 210, 0);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0800))
+            {
+                RIGHT_BACKWARD(0);
+                SPEED_SETTING(210, 0, 0, 230);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x8000))
+            {
+                LEFT_TURNAROUND(VALL);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x2000))
+            {
+                RIGHT_TURNAROUND(VALL);
+                vibrate = 0x10;
+            }
+            if (ps2x.ButtonPressed(0x0008))
+            {
+                demo();
+            }
+
+            if (ps2x.ButtonReleased(0x0010))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0020))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0080))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0040))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0100))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0200))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0400))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x0800))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x8000))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
+            if (ps2x.ButtonReleased(0x2000))
+            {
+                STOP();
+                vibrate = 0x00;
+            }
         }
     }
     delay(50);
@@ -504,44 +550,61 @@ void STOP()
 
 void demo()
 {
-    BACKWARD(128);
+    FRONTWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    FRONTWARD(128);
+
+    BACKWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    LEFTWARD(128);
+
+    LEFTWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    RIGHTWARD(128);
+
+    RIGHTWARD(0);
+    SPEED_SETTING(210, 255, 210, 210);
     delay(2000);
     STOP();
     delay(2000);
-    LEFT_FRONTWARD(128);
-    delay(2000);
+
+    LEFT_FRONTWARD(0);
+    SPEED_SETTING(210, 0, 0, 230);
+    delay(3000);
     STOP();
     delay(2000);
-    LEFT_BACKWARD(128);
-    delay(2000);
+
+    RIGHT_FRONTWARD(0);
+    SPEED_SETTING(0, 255, 210, 0);
+    delay(3000);
     STOP();
     delay(2000);
-    RIGHT_FRONTWARD(128);
-    delay(2000);
+
+    RIGHT_BACKWARD(0);
+    SPEED_SETTING(210, 0, 0, 230);
+    delay(3000);
     STOP();
     delay(2000);
-    RIGHT_BACKWARD(128);
-    delay(2000);
+
+    LEFT_BACKWARD(0);
+    SPEED_SETTING(0, 255, 210, 0);
+    delay(3000);
     STOP();
     delay(2000);
-    RIGHT_TURNAROUND(128);
-    delay(2000);
+
+    RIGHT_TURNAROUND(255);
+    delay(3500);
     STOP();
     delay(2000);
-    LEFT_TURNAROUND(128);
-    delay(2000);
+
+    LEFT_TURNAROUND(255);
+    delay(3500);
     STOP();
     delay(2000);
 }
